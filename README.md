@@ -22,7 +22,7 @@
 
 ## Project Overview
 
-**GameFrameX.Config** is the unified game configuration hub of the GameFrameX framework, built on top of [Luban](https://github.com/focus-creative-games/luban). You author all game configuration and localization text in a single set of Excel source files, then generate code and data for **both client and server** in one pass.
+**GameFrameX.Config** is the unified game configuration hub of the GameFrameX framework, built on top of [Luban](https://github.com/GameFrameX/luban). You author all game configuration and localization text in a single set of Excel source files, then generate code and data for **both client and server** in one pass.
 
 - **One source, dual export** — the same Excel definitions produce client (Unity) and server (.NET) outputs.
 - **Built-in localization (L10N)** — multilingual text managed alongside config via the `gameframex` L10N provider, exported together with the client data.
@@ -140,4 +140,5 @@ This project is licensed under the [Apache License 2.0](LICENSE.md).
 - [Documentation](https://gameframex.doc.alianblank.com)
 - [GitHub Repository](https://github.com/GameFrameX/GameFrameX.Config)
 - [Issue Tracker](https://github.com/GameFrameX/GameFrameX.Config/issues)
+- [Luban (GameFrameX fork)](https://github.com/GameFrameX/luban)
 - [Luban (upstream)](https://github.com/focus-creative-games/luban)

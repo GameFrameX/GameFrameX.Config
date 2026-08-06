@@ -22,7 +22,7 @@
 
 ## 项目简介
 
-**GameFrameX.Config** 是 GameFrameX 框架的统一游戏配置中心，基于 [Luban](https://github.com/focus-creative-games/luban) 构建。你只需在一套 Excel 源文件中维护全部游戏配置和多语言文本，即可一次性为**客户端和服务端**生成代码与数据。
+**GameFrameX.Config** 是 GameFrameX 框架的统一游戏配置中心，基于 [Luban](https://github.com/GameFrameX/luban) 构建。你只需在一套 Excel 源文件中维护全部游戏配置和多语言文本，即可一次性为**客户端和服务端**生成代码与数据。
 
 - **一源双端** —— 同一份 Excel 定义同时产出客户端（Unity）与服务端（.NET）输出。
 - **内置本地化（L10N）** —— 通过 `gameframex` L10N provider 将多语言文本与配置统一管理，并随客户端数据一并导出。
@@ -140,4 +140,5 @@ gen-server-bin.bat
 - [文档](https://gameframex.doc.alianblank.com)
 - [GitHub 仓库](https://github.com/GameFrameX/GameFrameX.Config)
 - [问题追踪](https://github.com/GameFrameX/GameFrameX.Config/issues)
+- [Luban（GameFrameX 分支）](https://github.com/GameFrameX/luban)
 - [Luban（上游）](https://github.com/focus-creative-games/luban)

@@ -22,7 +22,7 @@
 
 ## プロジェクト概要
 
-**GameFrameX.Config** は、GameFrameX フレームワークの統合ゲーム設定ハブであり、[Luban](https://github.com/focus-creative-games/luban) の上に構築されています。すべてのゲーム設定とローカライズテキストを 1 セットの Excel ソースファイルで管理し、**クライアントとサーバーの両方**に対してコードとデータを一括生成できます。
+**GameFrameX.Config** は、GameFrameX フレームワークの統合ゲーム設定ハブであり、[Luban](https://github.com/GameFrameX/luban) の上に構築されています。すべてのゲーム設定とローカライズテキストを 1 セットの Excel ソースファイルで管理し、**クライアントとサーバーの両方**に対してコードとデータを一括生成できます。
 
 - **単一ソース・両端出力** —— 同じ Excel 定義からクライアント（Unity）とサーバー（.NET）の出力を生成します。
 - **ローカライズ内蔵（L10N）** —— `gameframex` L10N provider により多言語テキストを設定と一元管理し、クライアントデータと一緒にエクスポートします。
@@ -140,4 +140,5 @@ gen-server-bin.bat
 - [ドキュメント](https://gameframex.doc.alianblank.com)
 - [GitHub リポジトリ](https://github.com/GameFrameX/GameFrameX.Config)
 - [Issue トラッカー](https://github.com/GameFrameX/GameFrameX.Config/issues)
+- [Luban（GameFrameX フォーク）](https://github.com/GameFrameX/luban)
 - [Luban（アップストリーム）](https://github.com/focus-creative-games/luban)
