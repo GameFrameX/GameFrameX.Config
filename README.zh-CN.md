@@ -10,7 +10,7 @@
 
 **独立游戏前后端一体化解决方案 · 独立游戏开发者的圆梦大使**
 
-[📖 文档](https://gameframex.doc.alianblank.com/zh-CN) • [🚀 快速开始](#快速开始) • [💬 QQ群: 870596322](https://qm.qq.com/q/IrE4RSmqgY)
+[📖 文档](https://gameframex.doc.alianblank.com/zh-CN) • [🚀 快速开始](#新手实战) • [💬 QQ群: 870596322](https://qm.qq.com/q/IrE4RSmqgY)
 
 ---
 
@@ -20,206 +20,337 @@
 
 </div>
 
-## 项目简介
+## 这是什么？
 
-**GameFrameX.Config** 是 GameFrameX 框架的统一游戏配置中心，基于 [Luban](https://github.com/GameFrameX/luban) 构建。你只需在一套 Excel 源文件中维护全部游戏配置和多语言文本，即可一次性为**客户端和服务端**生成代码与数据。
+**GameFrameX.Config 是一个「配置表工具」**。
 
-- **一源双端** —— 同一份 Excel 定义同时产出客户端（Unity）与服务端（.NET）输出。
-- **内置本地化（L10N）** —— 通过 `gameframex` L10N provider 将多语言文本与配置统一管理，并随客户端数据一并导出。
-- **跨端类型映射** —— `vec2` / `vec3` / `vec4` 在客户端映射为 `UnityEngine.Vector2/3/4`，在服务端映射为 `System.Numerics.Vector2/3/4`。
-- **JSON 与 Bin 双格式** —— 可按目标自由选择；同时提供 Windows（`.bat`）和 macOS/Linux（`.sh`）脚本。
+简单说：**策划在 Excel 里填游戏数据，本工具会自动把它们变成代码和数据文件，游戏程序（客户端和服务端）都能直接用。**
 
-## 功能特性
+打个比方——Excel 表就是你的「游戏数据字典」，Config 负责把这本字典翻译成程序能直接读懂的格式。策划只管填表，程序只管读数据，中间这步 Config 帮你自动完成。
 
-| 能力 | 说明 |
-|------|------|
-| 双端生成 | 一份 Excel 源 → 客户端（`cs-simple-json`）+ 服务端（`cs-dotnet-json` / `cs-bin`） |
-| 本地化 | `gameframex` L10N provider；基于 key 的文本文件位于 `Excels/Local/`，随客户端一并导出 |
-| 类型桥接 | `vec2/3/4` 自动映射到各端对应的向量类型 |
-| 多种格式 | JSON（可读）与 Bin（紧凑、带校验） |
-| 跨平台脚本 | Windows 使用 `.bat`，macOS/Linux 使用 `.sh` |
+它基于开源工具 [Luban](https://github.com/GameFrameX/luban) 构建（GameFrameX 做了定制增强）。
 
-## 目录结构
+## 能帮你做什么？
+
+**如果你是策划：**
+
+- 在熟悉的 Excel 里填数据就行（道具、成就、声音、多语言文本……）
+- 改完表交给程序「生成一下」，数据就同步到游戏里了
+- 不用碰代码
+
+**如果你是开发者：**
+
+- 跑一个脚本，自动得到 C# 的配置类 + 数据文件
+- 直接在代码里 `tables.TbXxx.Get(id)` 读取，不用手写解析
+- 客户端（Unity）和服务端（.NET）各生成一份，类型还对得上
+
+## 先搞懂几个词
+
+| 词 | 大白话解释 |
+|----|-----------|
+| **配置表** | 游戏的数据表，存在 Excel 里。比如道具表、成就表、等级表。 |
+| **客户端** | 玩家那边的游戏程序，这里是 Unity 做的。 |
+| **服务端** | 服务器上跑的程序，这里是 .NET 做的。 |
+| **生成** | 把 Excel 转成程序能直接用的代码和数据，这一步自动完成。 |
+| **多语言（本地化）** | 同一条文字有多个语言版本（中文/英文/日文/韩文……），玩家看到哪种取决于设置。 |
+
+## 文件夹里都有什么
 
 ```
 Config/
-├── Defines/                  # 类型定义（内置 bean，如 vec2/vec3/vec4）
-│   └── builtin.xml
-├── Excels/                   # Excel 源文件
-│   ├── __tables__.xlsx       # 数据表注册表
-│   ├── __beans__.xlsx        # bean（结构体）定义
-│   ├── __enums__.xlsx        # 枚举定义
-│   ├── Tables/               # 游戏配置表（道具、成就等）
-│   └── Local/                # 本地化文本（key → 翻译）
-├── Tools/                    # Luban 运行时（Luban.dll + 依赖 + 模板）
-├── luban.conf                # Luban 配置（目标、分组、命令）
-├── gen-client-json.sh/.bat   # 生成客户端 JSON 输出
-├── gen-client-bin.sh/.bat    # 生成客户端 Bin 输出
-├── gen-server-json.sh/.bat   # 生成服务端 JSON 输出
-└── gen-server-bin.sh/.bat    # 生成服务端 Bin 输出
+├── Defines/        ← 自带的数据类型（坐标等）
+├── Excels/         ← 你填的 Excel 都放这里（最重要）
+│   ├── Tables/     ← 游戏数据表（道具、成就等）
+│   └── Local/      ← 多语言文本
+├── Tools/          ← 工具本体（不用动）
+├── luban.conf      ← 工具配置（一般不用动）
+└── gen-*.bat/.sh   ← 生成脚本（双击或运行就用）
 ```
 
-### 目录说明
+**重点看这几个：**
 
-| 目录 | 作用 |
-|------|------|
-| `Defines/` | 跨端类型定义。`builtin.xml` 定义 `vec2`/`vec3`/`vec4` 等 bean，按目标端映射——客户端为 `UnityEngine.Vector*`，服务端为 `System.Numerics.Vector*`。 |
-| `Excels/` | Excel 源数据根目录，被 `gameframex` 导入器递归扫描（见下方「Excel 源文件布局」）。 |
-| `Tools/` | Luban 运行时：`Luban.dll` 及其依赖程序集和 `Templates/` 代码模板。gen 脚本通过 `dotnet Tools/Luban.dll` 调用。 |
+- **`Excels/Tables/`** —— 游戏数据表放这里。比如道具表、成就表。
+- **`Excels/Local/`** —— 多语言文本放这里。同一条文字的各国翻译。
+- **`Excels/__tables__.xlsx`、`__beans__.xlsx`、`__enums__.xlsx`** —— 这三个是「高级定义表」，用来定义复杂的字段类型（比如枚举、结构体）。新手可以先不管，用最简单的 `int`、`string` 就能填表。
+- **`Defines/`** —— 工具自带的类型定义（比如坐标 `vec2/vec3/vec4`），客户端和服务端会自动适配各自的坐标类型。
+- **`Tools/`** —— 工具本体，不用动。
+- **`gen-client-json.bat`、`gen-server-bin.bat`** —— 生成脚本，**这是你最常点的东西**。
 
-### Excel 源文件布局
+## 新手实战
 
-| 路径 | 用途 |
-|------|------|
-| `Excels/__tables__.xlsx` | 数据表注册表。在 `gameframex` 导入器下，表由文件名自动发现，因此该文件可为空。 |
-| `Excels/__beans__.xlsx` | 各表字段共用的 bean（结构体）定义（如 `Property`、`PropItem`）。 |
-| `Excels/__enums__.xlsx` | 枚举定义，可按分类拆分到多个 sheet。 |
-| `Excels/Tables/` | 游戏配置数据表——每个导出的 `Tb*` 类对应一张逻辑表。 |
-| `Excels/Local/` | 由 `gameframex` L10N provider 消费的本地化文本表。 |
+下面带你从零做一张「道具表」，走完一遍完整流程。跟着做一遍，你就全懂了。
 
-`Excels/` 下的子目录名参与命名空间推导：导入器按 `_`/`-` 切分目录名，取首段作为表命名空间，这也是 `Tables/` 和 `Local/` 保持独立目录的原因。
+### 第 1 步：新建 Excel 文件
 
-## 文件命名规范
-
-在 `gameframex` 表导入器下，每个 Excel 数据文件都按文件名自动发现。文件名按 `-` 或 `_` 切分，需遵循：
+在 `Excels/Tables/` 文件夹里，新建一个 Excel 文件，名字叫：
 
 ```
-{排序编号}-{导出表名}-{中文标识}.xlsx
-{排序编号}-{导出表名}-{分组}-{中文标识}.xlsx      ← 指定导出分组时
+D-MyItem-我的道具表.xlsx
 ```
 
-| 段位 | 含义 | 规则 |
+**名字怎么来的？记住一个公式：`字母 - 英文名 - 中文名`**
+
+- `D` —— 一个字母，方便在文件夹里排序找文件，随便取（用 A/B/C/D 都行）
+- `MyItem` —— 英文名，**会变成代码里的类名**（自动加 `Tb` 前缀 → `TbMyItem`）
+- `我的道具表` —— 中文名，给人看的，写啥都行
+
+### 第 2 步：填表头（前 4 行是「说明书」）
+
+打开文件，前 4 行是固定的「表头」，告诉工具这张表有哪些字段：
+
+| 行 | 填什么 | 本例 |
+|----|--------|------|
+| 第 1 行 `##var` | 字段名（英文） | `id`、`name`、`price` |
+| 第 2 行 `##type` | 字段类型 | `int`、`text`、`int` |
+| 第 3 行 `##group` | 字段分组（一般留空） | 空、空、空 |
+| 第 4 行 `##` | 中文说明（给人看） | 道具ID、道具名、价格 |
+
+填出来长这样：
+
+| ##var | id | name | price |
+|-------|----|------|-------|
+| ##type | int | text | int |
+| ##group | | | |
+| ## | 道具ID | 道具名 | 价格 |
+
+> 这四行的第一格（`##var`、`##type`、`##group`、`##`）是固定标记，必须照写。
+
+### 第 3 步：填数据（第 5 行开始）
+
+表头下面就是真正的数据，一行一条：
+
+| ##var | id | name | price |
+|-------|----|------|-------|
+| ##type | int | text | int |
+| ##group | | | |
+| ## | 道具ID | 道具名 | 价格 |
+| | 10001 | diamond | 10 |
+| | 10002 | coin | 1 |
+
+- `id` 用数字（`int`）
+- `name` 填的是一个**多语言 key**（`text` 类型），实际显示的文字在 `Excels/Local/` 里翻译。这里填 `diamond`，再到本地化表里写 `diamond` = 钻石/钻石/ダイヤ…。
+- `price` 用数字
+
+### 第 4 步：生成代码
+
+回到 `Config` 文件夹：
+
+- **Windows**：双击 `gen-client-json.bat`
+- **Mac / Linux**：终端里运行 `sh gen-client-json.sh`
+
+等它跑完（看到 `pause` 或没报错就行）。
+
+### 第 5 步：拿到结果
+
+工具会自动在旁边的 `Unity` 文件夹里生成两个东西：
+
+- **数据文件**（JSON）：里面是你的道具数据
+- **代码文件**（C#）：里面有个 `TbMyItem` 类，就是你的道具表
+
+### 第 6 步：在代码里用
+
+```csharp
+// 拿到 id 为 10001 的道具
+var item = tables.TbMyItem.Get(10001);
+
+// 道具名会自动变成当前语言（比如中文显示「钻石」）
+Debug.Log(item.Name);
+Debug.Log(item.Price); // 10
+```
+
+**完事！** 你在 Excel 里填的数据，就这样变成游戏里能直接用的代码了 ✅
+
+## 怎么给表起名字
+
+上面用过那个公式，这里讲全：
+
+```
+字母 - 英文名 - 中文名.xlsx
+字母 - 英文名 - 分组 - 中文名.xlsx      ← 想限制只给某一端用时
+```
+
+**三段含义：**
+
+| 段 | 是什么 | 规则 | 例子 |
+|----|--------|------|------|
+| **字母** | 排序用的单字母，方便找文件 | 随便一个字母或数字 | `C`、`D`、`S`、`L` |
+| **英文名** | 会变成代码类名 `Tb英文名` | 只能用英文，**不能写中文** | `ItemConfig` → `TbItemConfig` |
+| **中文名** | 给人看的名字 | 随便写，可加多个 `-` | `道具表`、`道具表-1001` |
+
+**⚠️ 注意：英文名绝对不能写中文**，否则工具会报错：*"不支持中文表名"*。
+
+**想只给客户端或服务端用？** 在英文名和中文名中间加个分组标记：
+
+| 文件名 | 效果 |
+|--------|------|
+| `D-ItemConfig-道具表.xlsx` | 客户端、服务端**都用**（默认） |
+| `D-ItemConfig-c-道具表.xlsx` | **只有客户端**用 |
+| `D-ItemConfig-s-道具表.xlsx` | **只有服务端**用 |
+
+> `c` = 客户端，`s` = 服务端。不加分组就两边都生成。
+
+**现有表的名字对照：**
+
+| 文件名 | 生成的类名 |
+|--------|-----------|
+| `C-AchievementConfig-成就表.xlsx` | `TbAchievementConfig` |
+| `D-ItemConfig-道具表-道具-1001.xlsx` | `TbItemConfig` |
+| `S-SoundsConfig-声音表.xlsx` | `TbSoundsConfig` |
+| `L-Localization-成就.xlsx` | `TbLocalization` |
+
+## 表里该怎么填
+
+每张数据表的前 4 行是固定「表头」：
+
+| 行 | 标记 | 填什么 |
+|----|------|--------|
+| 1 | `##var` | 字段名（英文，如 `id`、`name`） |
+| 2 | `##type` | 字段类型（见下表） |
+| 3 | `##group` | 字段分组，一般留空 |
+| 4 | `##` | 中文说明，给自己和同事看 |
+
+**常用字段类型：**
+
+| 类型 | 意思 | 例子 |
 |------|------|------|
-| `{排序编号}` | 便于策划在文件浏览器中快速定位的单字母/数字，无导出语义。 | 字母或数字，不含中文，如 `C`、`D`、`S`、`L`。 |
-| `{导出表名}` | 生成的表类名为 `Tb{导出表名}`。 | PascalCase，**禁止中文**。如 `AchievementConfig` → `TbAchievementConfig`。 |
-| `{分组}`（可选） | 限制文件只在某端导出。 | 必须是已配置的分组：`c`（客户端）或 `s`（服务端）。若该段为中文或其他值，则忽略分组过滤，双端都导出。 |
-| `{中文标识}` | 人类可读的说明，仅作文档用途。 | 中文文本，可含多个 `-` 分段。 |
+| `int` | 整数 | `10001` |
+| `string` | 普通文字（不翻译） | `icon_diamond` |
+| `text` | 多语言文字（填 key，实际文字在 `Local/` 里） | `diamond` |
+| `bool` | 是/否 | `true` / `false` |
+| `float` | 小数 | `1.5` |
+| 枚举名 | 在 `__enums__.xlsx` 里定义过的类型 | `ItemType` |
 
-> 导入器会拒绝 `{导出表名}` 含中文的文件：*"不支持中文表名 ... 表名称定义规范为: 排序编号-导出表名-中文标识名称"*。
+> `text` 和 `string` 的区别：`text` 是要翻译的多语言文字（填一个 key），`string` 是不翻译的普通文字（直接填内容）。
 
-### 分表
+**一个填好的例子（成就表片段）：**
 
-一张逻辑表的数据可以分散到多个 Excel 文件——当表数据量很大，或想按模块组织行数据时很有用。导入器会把 `{导出表名}` 相同的所有文件合并为同一张表，导出时它们的行会被拼接在一起。
+| ##var | id | image | name | achievement_content |
+|-------|----|-------|------|---------------------|
+| ##type | int | int | text | text |
+| ##group | | | | |
+| ## | ID | 图标id | 成就Key | 成就内容Key |
+| | 900001 | 101 | achievement_001 | achievement_001_desc |
 
-命名：各分片保持 `{排序编号}` 和 `{导出表名}` 一致，只通过 `{中文标识}` 加以区分。中文标识（含其中的编号或分类）仅作文档用途，导入器不会解析它。
+## 一张表太大了怎么办
 
-| 分表文件 | 合并后的表 | 典型用途 |
-|----------|------------|----------|
-| `L-Localization-成就.xlsx`、`L-Localization-文本.xlsx`、`L-Localization-UI.xlsx` | `TbLocalization` | 按模块组织本地化文本 |
-| `D-ItemConfig-道具表-道具-1001.xlsx`、`D-ItemConfig-道具表-道具-1002.xlsx`、… | `TbItemConfig` | 将大表拆分为易于管理的多个文件 |
+当一张表数据特别多（比如道具上千条），可以**拆成几个文件**，工具会自动把它们合并成一张表。
 
-### 示例
-
-| 文件名 | 表类名 | 分组 | 说明 |
-|--------|--------|------|------|
-| `C-AchievementConfig-成就表.xlsx` | `TbAchievementConfig` | 双端 | 成就表 |
-| `D-ItemConfig-道具表-道具-1001.xlsx` | `TbItemConfig` | 双端 | 道具表（分片）|
-| `S-SoundsConfig-声音表.xlsx` | `TbSoundsConfig` | 双端 | 声音表 |
-| `C-AchievementConfig-c-成就表.xlsx`（示例） | `TbAchievementConfig` | 仅客户端 | 将只在客户端导出 |
-
-## 表头规范
-
-每张数据表 sheet 用固定的表头块定义字段。`gameframex` 导入器直接从这些行读取结构（`read_schema_from_file = true`）：
-
-| 行 | 标记 | 用途 |
-|----|------|------|
-| 1 | `##var` | 字段名 |
-| 2 | `##type` | 字段类型：`int`、`string`、`text`、`bool`、枚举/bean 名、`list,...` 等 |
-| 3 | `##group` | 字段级分组过滤（`c`/`s`），留空表示对所有目标导出 |
-| 4 | `##` | 中文注释/说明，供策划阅读 |
-
-- `text` 字段保存的是一个**本地化 key**，在客户端导出时对照 `Local/` 表解析。
-- 枚举/bean 类型必须在 `__enums__.xlsx` / `__beans__.xlsx` 中定义。
-
-示例（成就表节选）：
+**怎么拆？** 只要**英文名一样**就行，中文名随便写来区分：
 
 ```
-##var    | id | image | name | achievement_content | LockText | achievement_unlock_condition
-##type   | int| int   | text | text                | text     | (list#sep=|),int
-##group  |    |       |      |                     |          |
-##       | ID | 图标id | 成就Key | 成就内容Key          | 未解锁文字key | 成就解锁条件
+D-ItemConfig-道具表-1-1000.xlsx      ← 第 1~1000 个道具
+D-ItemConfig-道具表-1001-2000.xlsx   ← 第 1001~2000 个道具
+D-ItemConfig-道具表-2001-3000.xlsx   ← 第 2001~3000 个道具
 ```
 
-## 快速开始
+这三个文件的英文名都是 `ItemConfig`，工具会自动合并成一个 `TbItemConfig`。
 
-### 前置要求
+**多语言表也是这么分的**（按模块拆）：
 
-- 较新版本的 **.NET SDK** —— Luban 以 `dotnet` 工具运行（`dotnet Tools/Luban.dll`）。
-- 在 `Config` 同级目录检出 `Unity` 和 `Server` 仓库。生成脚本会写入 `../Unity/Assets/...` 和 `../Server/GameFrameX.Config/...`。
-
-### 生成客户端配置（JSON）
-
-在 `Config` 目录下执行：
-
-```bash
-# macOS / Linux
-sh gen-client-json.sh
-
-# Windows
-gen-client-json.bat
+```
+L-Localization-成就.xlsx    ┐
+L-Localization-文本.xlsx    ├→ 合并成一个 TbLocalization
+L-Localization-UI.xlsx      ┘
 ```
 
-导出位置：
+> 中文名里的编号、分类（比如 `1-1000`、`成就`）只是给人看的，工具不解析，你怎么方便怎么写。
 
-- **数据** → `../Unity/Assets/Bundles/Config`
-- **代码** → `../Unity/Assets/Hotfix/Config/Generate`
+## 怎么生成代码
 
-### 生成服务端配置（Bin）
+### 先准备好
 
-```bash
-# macOS / Linux
-sh gen-server-bin.sh
+1. 装好 **.NET SDK**（工具靠它运行）
+2. 在 `Config` 文件夹旁边，要有 `Unity` 和 `Server` 两个文件夹（生成的代码会放进去）
 
-# Windows
-gen-server-bin.bat
+### 生成客户端（Unity）数据
+
+- **Windows**：双击 `gen-client-json.bat`
+- **Mac / Linux**：`sh gen-client-json.sh`
+
+生成的东西去哪了：
+
+- 数据 → `../Unity/Assets/Bundles/Config`
+- 代码 → `../Unity/Assets/Hotfix/Config/Generate`
+
+### 生成服务端（.NET）数据
+
+- **Windows**：双击 `gen-server-bin.bat`
+- **Mac / Linux**：`sh gen-server-bin.sh`
+
+生成的东西去哪了：
+
+- 数据 → `../Server/GameFrameX.Config/Json`
+- 代码 → `../Server/GameFrameX.Config/Config`
+
+> 四个脚本的组合：`gen-{端}-{格式}.{sh/bat}`，端 = `client`/`server`，格式 = `json`（人能读）/ `bin`（更小更快）。
+
+## 生成的代码怎么用
+
+**客户端（Unity）里：**
+
+```csharp
+// tables 是配置管理器，工具会自动生成
+// TbItemConfig 就是你填的「道具表」，Get(id) 按id查
+var item = tables.TbItemConfig.Get(10001);
+Debug.Log($"名字:{item.Name}, 价格:{item.Price}");
+
+// 遍历所有道具
+foreach (var it in tables.TbItemConfig.DataList)
+{
+    Debug.Log(it.Name);
+}
 ```
 
-导出位置：
+**服务端（.NET）里：**
 
-- **数据** → `../Server/GameFrameX.Config/Json`
-- **代码** → `../Server/GameFrameX.Config/Config`
+```csharp
+var item = tables.TbItemConfig.Get(10001);
+Console.WriteLine($"{item.Name}: {item.Price}");
+```
 
-> 实际的输出路径和命令定义在 `luban.conf` 中（`UNITY_ASSETS_PATH`、`SERVER_PATH`、`commands`）。请根据你的目录布局进行调整。
+> `text` 类型的字段（如 `Name`）会自动显示成玩家当前语言，不用你手动判断语言。
 
-## 配置表
+## 生成的代码去了哪里
 
-仓库内置了用于演示工作流的示例表：
+工具按「端」分别生成，互不干扰：
 
-| 表 | 文件 | 说明 |
+| 生成给谁 | 用哪个脚本 | 代码命名空间 |
+|----------|-----------|-------------|
+| **客户端**（Unity） | `gen-client-*` | `Hotfix.Config` |
+| **服务端**（.NET） | `gen-server-*` | `GameFrameX.Config` |
+| **两边都要** | 各跑一次对应脚本 | 各自的 |
+
+> 简单记：客户端用 `client` 脚本，服务端用 `server` 脚本，需要哪端就跑哪个。
+
+## 现在仓库里有哪些表
+
+目前自带这些演示表：
+
+| 表 | 文件 | 内容 |
 |----|------|------|
 | 成就 | `Excels/Tables/C-AchievementConfig-成就表.xlsx` | 成就定义 |
 | 道具 | `Excels/Tables/D-ItemConfig-道具表-道具-1001.xlsx` | 道具定义 |
 | 声音 | `Excels/Tables/S-SoundsConfig-声音表.xlsx` | 声音定义 |
-| 本地化 — 成就 | `Excels/Local/L-Localization-成就.xlsx` | 成就文本翻译 |
-| 本地化 — 文本 | `Excels/Local/L-Localization-文本.xlsx` | 通用文本翻译 |
-| 本地化 — UI | `Excels/Local/L-Localization-UI.xlsx` | UI 文本翻译 |
+| 多语言-成就 | `Excels/Local/L-Localization-成就.xlsx` | 成就的多语言文本 |
+| 多语言-文本 | `Excels/Local/L-Localization-文本.xlsx` | 通用多语言文本 |
+| 多语言-UI | `Excels/Local/L-Localization-UI.xlsx` | UI 的多语言文本 |
 
-新增数据表时，在 `Excels/__tables__.xlsx` 中注册，并在 `Excels/__beans__.xlsx` 中定义对应的 bean。
+想加新表？照着「新手实战」的步骤来就行。
 
-## 导出目标
+## 需要什么环境
 
-`luban.conf` 中配置了三个目标：
-
-| 目标 | 分组 | 顶层模块 | 代码目标 | 用途 |
-|------|------|----------|----------|------|
-| `server` | `s` | `GameFrameX.Config` | `cs-dotnet-json` / `cs-bin` | 服务端（.NET） |
-| `client` | `c` | `Hotfix.Config` | `cs-simple-json` / `cs-bin` | 客户端（Unity） |
-| `all` | `c`, `s` | `cfg` | `luban`（默认） | 双端同时 |
-
-## 系统要求
-
-- **.NET SDK** —— 用于运行 `Luban.dll`。
-- **Excel**（或兼容编辑器）—— 用于编写 `.xlsx` 源文件。
-- **操作系统** —— Windows、macOS 或 Linux。
+- **.NET SDK** —— 运行工具用（去 [dot.net](https://dotnet.microsoft.com/) 下）
+- **Excel**（或 WPS、Numbers 等能编辑 `.xlsx` 的软件）—— 填表用
+- **系统** —— Windows、Mac、Linux 都行
 
 ## 开源协议
 
-本项目基于 [Apache License 2.0](LICENSE.md) 协议开源。
+本项目基于 [Apache License 2.0](LICENSE.md) 协议开源，免费用、可商用。
 
 ## 相关链接
 
 - [文档](https://gameframex.doc.alianblank.com)
 - [GitHub 仓库](https://github.com/GameFrameX/GameFrameX.Config)
-- [问题追踪](https://github.com/GameFrameX/GameFrameX.Config/issues)
-- [Luban（GameFrameX 分支）](https://github.com/GameFrameX/luban)
-- [Luban（上游）](https://github.com/focus-creative-games/luban)
+- [问题反馈](https://github.com/GameFrameX/GameFrameX.Config/issues)
+- [Luban（GameFrameX 定制版）](https://github.com/GameFrameX/luban)
+- [Luban（原版上游）](https://github.com/focus-creative-games/luban)

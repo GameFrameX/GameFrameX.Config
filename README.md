@@ -10,7 +10,7 @@
 
 **All-in-One Solution for Indie Game Development · Empowering Indie Developers' Dreams**
 
-[📖 Documentation](https://gameframex.doc.alianblank.com/) • [🚀 Quick Start](#quick-start) • [💬 QQ Group: 870596322](https://qm.qq.com/q/IrE4RSmqgY)
+[📖 Documentation](https://gameframex.doc.alianblank.com/) • [🚀 Quick Start](#beginner-walkthrough) • [💬 QQ Group: 870596322](https://qm.qq.com/q/IrE4RSmqgY)
 
 ---
 
@@ -20,206 +20,337 @@
 
 </div>
 
-## Project Overview
+## What is this?
 
-**GameFrameX.Config** is the unified game configuration hub of the GameFrameX framework, built on top of [Luban](https://github.com/GameFrameX/luban). You author all game configuration and localization text in a single set of Excel source files, then generate code and data for **both client and server** in one pass.
+**GameFrameX.Config is a "config table tool."**
 
-- **One source, dual export** — the same Excel definitions produce client (Unity) and server (.NET) outputs.
-- **Built-in localization (L10N)** — multilingual text managed alongside config via the `gameframex` L10N provider, exported together with the client data.
-- **Cross-platform types** — `vec2` / `vec3` / `vec4` map to `UnityEngine.Vector2/3/4` on the client and `System.Numerics.Vector2/3/4` on the server.
-- **JSON & Bin formats** — choose per target; scripts are provided for both Windows (`.bat`) and macOS/Linux (`.sh`).
+In plain words: **Game designers fill in game data in Excel, and this tool automatically turns it into code and data files that both the game client and server can use directly.**
 
-## Features
+Think of it this way — an Excel table is your "game data dictionary," and Config translates that dictionary into a format the program can read directly. Designers just fill in the tables, programmers just read the data, and Config handles the middle step for you automatically.
 
-| Capability | Description |
-|------------|-------------|
-| Dual-end generation | One Excel source → client (`cs-simple-json`) + server (`cs-dotnet-json` / `cs-bin`) |
-| Localization | `gameframex` L10N provider; key-based text files under `Excels/Local/`, exported with the client |
-| Type bridging | `vec2/3/4` automatically mapped to the correct vector type per platform |
-| Multiple formats | JSON (human-readable) and Bin (compact, with validation) |
-| Cross-platform scripts | `.bat` for Windows and `.sh` for macOS/Linux |
+It's built on the open-source tool [Luban](https://github.com/GameFrameX/luban) (with custom enhancements by GameFrameX).
 
-## Directory Structure
+## What can it do for you?
+
+**If you're a game designer:**
+
+- Just fill in data in the Excel you already know (items, achievements, sounds, localized text...)
+- After editing, hand it to a programmer to "generate," and the data syncs into the game
+- You never have to touch code
+
+**If you're a developer:**
+
+- Run one script and automatically get C# config classes + data files
+- Read data directly in code with `tables.TbXxx.Get(id)` — no need to hand-write parsers
+- Client (Unity) and server (.NET) each get their own copy, and the types line up
+
+## Key terms in plain English
+
+| Term | Plain English explanation |
+|------|---------------------------|
+| **Config table** | A game data table stored in Excel. For example, the item table, achievement table, or level table. |
+| **Client** | The game program on the player's side — here, built with Unity. |
+| **Server** | The program running on the server — here, built with .NET. |
+| **Generate** | The automatic step that turns Excel into code and data the program can use directly. |
+| **Localization** | The same text exists in several language versions (Chinese / English / Japanese / Korean...); which one the player sees depends on their settings. |
+
+## What's in the folders
 
 ```
 Config/
-├── Defines/                  # Type definitions (builtin beans, e.g. vec2/vec3/vec4)
-│   └── builtin.xml
-├── Excels/                   # Excel source files
-│   ├── __tables__.xlsx       # Table registry
-│   ├── __beans__.xlsx        # Bean (struct) definitions
-│   ├── __enums__.xlsx        # Enum definitions
-│   ├── Tables/               # Game config tables (items, achievements, ...)
-│   └── Local/                # Localization text (key → translations)
-├── Tools/                    # Luban runtime (Luban.dll + dependencies + templates)
-├── luban.conf                # Luban configuration (targets, groups, commands)
-├── gen-client-json.sh/.bat   # Generate client JSON output
-├── gen-client-bin.sh/.bat    # Generate client Bin output
-├── gen-server-json.sh/.bat   # Generate server JSON output
-└── gen-server-bin.sh/.bat    # Generate server Bin output
+├── Defines/        ← Built-in data types (coordinates, etc.)
+├── Excels/         ← Your Excel files go here (most important)
+│   ├── Tables/     ← Game data tables (items, achievements, etc.)
+│   └── Local/      ← Localized text
+├── Tools/          ← The tool itself (don't touch)
+├── luban.conf      ← Tool config (usually don't touch)
+└── gen-*.bat/.sh   ← Generate scripts (double-click or run to use)
 ```
 
-### Folders
+**Focus on these:**
 
-| Folder | Role |
-|--------|------|
-| `Defines/` | Cross-platform type definitions. `builtin.xml` defines beans like `vec2`/`vec3`/`vec4`, mapped per target — `UnityEngine.Vector*` on the client, `System.Numerics.Vector*` on the server. |
-| `Excels/` | Excel source root, recursively scanned by the `gameframex` importer (see *Excel source layout* below). |
-| `Tools/` | Luban runtime: `Luban.dll` plus its dependency assemblies and the `Templates/` code templates. The gen scripts invoke it via `dotnet Tools/Luban.dll`. |
+- **`Excels/Tables/`** — Game data tables go here. For example, the item table, the achievement table.
+- **`Excels/Local/`** — Localized text goes here. Translations of the same text into different languages.
+- **`Excels/__tables__.xlsx`, `__beans__.xlsx`, `__enums__.xlsx`** — These three are "advanced definition tables" used to define complex field types (like enums and structs). Beginners can ignore them at first — `int` and `string` are enough to fill in a table.
+- **`Defines/`** — Built-in type definitions that ship with the tool (like coordinates `vec2/vec3/vec4`). The client and server auto-adapt to their own coordinate types.
+- **`Tools/`** — The tool itself, don't touch.
+- **`gen-client-json.bat`, `gen-server-bin.bat`** — The generate scripts. **This is what you'll click most often.**
 
-### Excel source layout
+## Beginner walkthrough
 
-| Path | Purpose |
-|------|---------|
-| `Excels/__tables__.xlsx` | Table registry. Under the `gameframex` importer, tables are auto-discovered from filenames, so this file may stay empty. |
-| `Excels/__beans__.xlsx` | Shared bean (struct) definitions referenced by table fields (e.g. `Property`, `PropItem`). |
-| `Excels/__enums__.xlsx` | Enum definitions; can be split across multiple sheets for grouping. |
-| `Excels/Tables/` | Game config data tables — one logical table per exported `Tb*` class. |
-| `Excels/Local/` | Localization text tables consumed by the `gameframex` L10N provider. |
+Let's walk through making an "item table" from scratch, covering the whole flow once. Follow along once and you'll get it all.
 
-Sub-directory names under `Excels/` take part in namespace derivation: the importer splits the directory name on `_`/`-` and uses the first segment as the table namespace, which is why `Tables/` and `Local/` are kept as separate folders.
+### Step 1: Create the Excel file
 
-## File Naming Convention
-
-Under the `gameframex` table importer, every Excel data file is auto-discovered by its filename. The filename is split on `-` or `_` and must follow:
+In the `Excels/Tables/` folder, create a new Excel file named:
 
 ```
-{sort}-{TableName}-{Chinese label}.xlsx
-{sort}-{TableName}-{group}-{Chinese label}.xlsx      ← restrict to a target group
+D-MyItem-我的道具表.xlsx
 ```
 
-| Segment | Meaning | Rules |
-|---------|---------|-------|
-| `{sort}` | A single letter/digit for designers to quickly locate the file in a file browser. No export semantics. | Alphanumeric, no Chinese. e.g. `C`, `D`, `S`, `L`. |
-| `{TableName}` | The exported table class is generated as `Tb{TableName}`. | PascalCase, **no Chinese allowed**. e.g. `AchievementConfig` → `TbAchievementConfig`. |
-| `{group}` (optional) | Restricts the file to a target group. | Must be a configured group: `c` (client) or `s` (server). If the segment is Chinese or anything else, group filtering is skipped and the file is exported to both ends. |
-| `{Chinese label}` | Human-readable description, documentation only. | Chinese text; may contain multiple `-` segments. |
+**Where does the name come from? Remember this formula: `a letter, an English name, a Chinese name`**
 
-> The importer rejects Chinese in `{TableName}`: *"不支持中文表名 ... 表名称定义规范为: 排序编号-导出表名-中文标识名称"*.
+- `D` — A single letter, just to keep files sorted and easy to find in the folder. Any letter works (A/B/C/D all fine).
+- `MyItem` — The English name. **This becomes the class name in code** (a `Tb` prefix is auto-added → `TbMyItem`).
+- `我的道具表` — The Chinese name, for humans to read. Write whatever you want.
 
-### Table sharding
+### Step 2: Fill in the header (the first 4 rows are the "instruction manual")
 
-A single logical table can be spread across multiple Excel files — handy when a table grows large or when you want to group rows by module. The importer merges every file whose `{TableName}` segment is identical into one table; their rows are concatenated at export time.
+Open the file. The first 4 rows are the fixed "header" that tells the tool which fields this table has:
 
-Naming: keep `{sort}` and `{TableName}` identical across the shards, and vary only the `{Chinese label}` to tell them apart. The label (including any numbers or categories) is documentation-only — the importer does not parse it.
+| Row | What to fill | This example |
+|-----|--------------|--------------|
+| Row 1 `##var` | Field name (English) | `id`, `name`, `price` |
+| Row 2 `##type` | Field type | `int`, `text`, `int` |
+| Row 3 `##group` | Field group (usually leave empty) | empty, empty, empty |
+| Row 4 `##` | Description for humans | Item ID, Item name, Price |
 
-| Sharded files | Merged table | Typical use |
-|----------------|--------------|-------------|
-| `L-Localization-成就.xlsx`, `L-Localization-文本.xlsx`, `L-Localization-UI.xlsx` | `TbLocalization` | group localization text by module |
-| `D-ItemConfig-道具表-道具-1001.xlsx`, `D-ItemConfig-道具表-道具-1002.xlsx`, … | `TbItemConfig` | split a large table into manageable files |
+Filled in, it looks like this:
 
-### Examples
+| ##var | id | name | price |
+|-------|----|------|-------|
+| ##type | int | text | int |
+| ##group | | | |
+| ## | Item ID | Item name | Price |
 
-| Filename | Table class | Group | Notes |
-|----------|-------------|-------|-------|
-| `C-AchievementConfig-成就表.xlsx` | `TbAchievementConfig` | both | Achievement table |
-| `D-ItemConfig-道具表-道具-1001.xlsx` | `TbItemConfig` | both | Item table, sharded |
-| `S-SoundsConfig-声音表.xlsx` | `TbSoundsConfig` | both | Sound table |
-| `C-AchievementConfig-c-成就表.xlsx` (example) | `TbAchievementConfig` | client only | would export to client only |
+> The first cell of each of these four rows (`##var`, `##type`, `##group`, `##`) is a fixed marker — write it exactly as shown.
 
-## Table Header Schema
+### Step 3: Fill in the data (from row 5)
 
-Each data sheet defines its fields with a fixed header block. The `gameframex` importer reads the schema straight from these rows (`read_schema_from_file = true`):
+Below the header is the real data — one row per entry:
 
-| Row | Marker | Purpose |
-|-----|--------|---------|
-| 1 | `##var` | Field names |
-| 2 | `##type` | Field types: `int`, `string`, `text`, `bool`, an enum/bean name, `list,...`, etc. |
-| 3 | `##group` | Per-field group filter (`c`/`s`); blank = exported to all targets |
-| 4 | `##` | Chinese comment / description for designers |
+| ##var | id | name | price |
+|-------|----|------|-------|
+| ##type | int | text | int |
+| ##group | | | |
+| ## | Item ID | Item name | Price |
+| | 10001 | diamond | 10 |
+| | 10002 | coin | 1 |
 
-- `text` fields hold a **localization key** resolved against the `Local/` tables at client export time.
-- Enum/bean types must be defined in `__enums__.xlsx` / `__beans__.xlsx`.
+- `id` uses a number (`int`)
+- `name` is filled with a **localization key** (type `text`). The actual text shown to players is translated in `Excels/Local/`. For example, fill in `diamond` here, then in the localization table write `diamond` = 钻石 / 鑽石 / ダイヤ…
+- `price` uses a number
 
-Example (excerpt from the achievement table):
+### Step 4: Generate the code
 
-```
-##var    | id | image | name | achievement_content | LockText | achievement_unlock_condition
-##type   | int| int   | text | text                | text     | (list#sep=|),int
-##group  |    |       |      |                     |          |
-##       | ID | 图标id | 成就Key | 成就内容Key          | 未解锁文字key | 成就解锁条件
-```
+Back in the `Config` folder:
 
-## Quick Start
+- **Windows**: Double-click `gen-client-json.bat`
+- **Mac / Linux**: Run `sh gen-client-json.sh` in the terminal
 
-### Prerequisites
+Wait for it to finish (you're good when you see `pause` or no errors).
 
-- A recent **.NET SDK** — Luban runs as a `dotnet` tool (`dotnet Tools/Luban.dll`).
-- The sibling `Unity` and `Server` repositories checked out next to `Config`. The gen scripts write into `../Unity/Assets/...` and `../Server/GameFrameX.Config/...`.
+### Step 5: Get the output
 
-### Generate client config (JSON)
+The tool automatically generates two things in the `Unity` folder next door:
 
-From the `Config` directory:
+- **Data file** (JSON): contains your item data
+- **Code file** (C#): contains a `TbMyItem` class — that's your item table
 
-```bash
-# macOS / Linux
-sh gen-client-json.sh
+### Step 6: Use it in code
 
-# Windows
-gen-client-json.bat
-```
+```csharp
+// Get the item whose id is 10001
+var item = tables.TbMyItem.Get(10001);
 
-This exports:
-
-- **Data** → `../Unity/Assets/Bundles/Config`
-- **Code** → `../Unity/Assets/Hotfix/Config/Generate`
-
-### Generate server config (Bin)
-
-```bash
-# macOS / Linux
-sh gen-server-bin.sh
-
-# Windows
-gen-server-bin.bat
+// The item name automatically shows the current language (e.g. "钻石" in Chinese)
+Debug.Log(item.Name);
+Debug.Log(item.Price); // 10
 ```
 
-This exports:
+**Done!** The data you filled in Excel has now become code the game can use directly ✅
 
-- **Data** → `../Server/GameFrameX.Config/Json`
-- **Code** → `../Server/GameFrameX.Config/Config`
+## How to name a table
 
-> The active output paths and commands are defined in `luban.conf` (`UNITY_ASSETS_PATH`, `SERVER_PATH`, `commands`). Adjust them to match your checkout layout.
+We used that formula above — here's the full version:
 
-## Configuration Tables
+```
+letter - English name - Chinese name.xlsx
+letter - English name - group - Chinese name.xlsx      ← when you want to limit it to only one side
+```
 
-The repository ships with example tables that illustrate the workflow:
+**What the three parts mean:**
 
-| Table | File | Description |
-|-------|------|-------------|
+| Part | What it is | Rules | Example |
+|------|------------|-------|---------|
+| **Letter** | A single letter for sorting, makes files easy to find | Any letter or digit | `C`, `D`, `S`, `L` |
+| **English name** | Becomes the code class name `Tb<English name>` | English only, **no Chinese** | `ItemConfig` → `TbItemConfig` |
+| **Chinese name** | A name for humans to read | Write whatever, extra `-` allowed | `道具表`, `道具表-1001` |
+
+**⚠️ Note: the English name must never contain Chinese**, or the tool will throw an error saying Chinese table names aren't supported.
+
+**Want it only for the client or only for the server?** Add a group tag between the English name and the Chinese name:
+
+| Filename | Effect |
+|----------|--------|
+| `D-ItemConfig-道具表.xlsx` | Both client and server **use it** (default) |
+| `D-ItemConfig-c-道具表.xlsx` | **Only the client** uses it |
+| `D-ItemConfig-s-道具表.xlsx` | **Only the server** uses it |
+
+> `c` = client, `s` = server. No group tag means both sides get it.
+
+**Existing table names at a glance:**
+
+| Filename | Generated class name |
+|----------|----------------------|
+| `C-AchievementConfig-成就表.xlsx` | `TbAchievementConfig` |
+| `D-ItemConfig-道具表-道具-1001.xlsx` | `TbItemConfig` |
+| `S-SoundsConfig-声音表.xlsx` | `TbSoundsConfig` |
+| `L-Localization-成就.xlsx` | `TbLocalization` |
+
+## How to fill in a table
+
+The first 4 rows of every data table are the fixed "header":
+
+| Row | Marker | What to fill |
+|-----|--------|--------------|
+| 1 | `##var` | Field name (English, e.g. `id`, `name`) |
+| 2 | `##type` | Field type (see table below) |
+| 3 | `##group` | Field group, usually leave empty |
+| 4 | `##` | Description, for you and your colleagues |
+
+**Common field types:**
+
+| Type | Meaning | Example |
+|------|---------|---------|
+| `int` | Integer | `10001` |
+| `string` | Plain text (not translated) | `icon_diamond` |
+| `text` | Localized text (fill in a key; the real text lives in `Local/`) | `diamond` |
+| `bool` | Yes/no | `true` / `false` |
+| `float` | Decimal | `1.5` |
+| enum name | A type defined in `__enums__.xlsx` | `ItemType` |
+
+> The difference between `text` and `string`: `text` is localized text that gets translated (you fill in a key), `string` is plain text that isn't translated (you fill in the content directly).
+
+**A filled-in example (a fragment of the achievement table):**
+
+| ##var | id | image | name | achievement_content |
+|-------|----|-------|------|---------------------|
+| ##type | int | int | text | text |
+| ##group | | | | |
+| ## | ID | Icon id | Achievement Key | Achievement content Key |
+| | 900001 | 101 | achievement_001 | achievement_001_desc |
+
+## Table too big? Split it
+
+When one table has a lot of data (say, thousands of items), you can **split it across several files** — the tool will auto-merge them into one table.
+
+**How to split?** Just make sure **the English name is the same**; the Chinese name can be whatever helps you tell them apart:
+
+```
+D-ItemConfig-道具表-1-1000.xlsx      ← items 1~1000
+D-ItemConfig-道具表-1001-2000.xlsx   ← items 1001~2000
+D-ItemConfig-道具表-2001-3000.xlsx   ← items 2001~3000
+```
+
+All three files share the English name `ItemConfig`, so the tool auto-merges them into one `TbItemConfig`.
+
+**The localization tables work the same way** (split by module):
+
+```
+L-Localization-成就.xlsx    ┐
+L-Localization-文本.xlsx    ├→ merged into one TbLocalization
+L-Localization-UI.xlsx      ┘
+```
+
+> Numbers or categories in the Chinese name (like `1-1000`, `成就`) are just for humans — the tool doesn't parse them, write whatever makes your life easier.
+
+## How to generate the code
+
+### Get ready
+
+1. Install the **.NET SDK** (the tool runs on it)
+2. Next to the `Config` folder, you need `Unity` and `Server` folders (the generated code goes in there)
+
+### Generate client (Unity) data
+
+- **Windows**: Double-click `gen-client-json.bat`
+- **Mac / Linux**: `sh gen-client-json.sh`
+
+Where the generated stuff goes:
+
+- Data → `../Unity/Assets/Bundles/Config`
+- Code → `../Unity/Assets/Hotfix/Config/Generate`
+
+### Generate server (.NET) data
+
+- **Windows**: Double-click `gen-server-bin.bat`
+- **Mac / Linux**: `sh gen-server-bin.sh`
+
+Where the generated stuff goes:
+
+- Data → `../Server/GameFrameX.Config/Json`
+- Code → `../Server/GameFrameX.Config/Config`
+
+> The four scripts follow this pattern: `gen-{side}-{format}.{sh/bat}`, where side = `client`/`server` and format = `json` (human-readable) / `bin` (smaller and faster).
+
+## How to use the generated code
+
+**In the client (Unity):**
+
+```csharp
+// "tables" is the config manager, auto-generated by the tool
+// TbItemConfig is the "item table" you filled in; Get(id) looks up by id
+var item = tables.TbItemConfig.Get(10001);
+Debug.Log($"Name:{item.Name}, Price:{item.Price}");
+
+// Loop through all items
+foreach (var it in tables.TbItemConfig.DataList)
+{
+    Debug.Log(it.Name);
+}
+```
+
+**In the server (.NET):**
+
+```csharp
+var item = tables.TbItemConfig.Get(10001);
+Console.WriteLine($"{item.Name}: {item.Price}");
+```
+
+> Fields of type `text` (like `Name`) automatically show the player's current language — you don't have to handle languages yourself.
+
+## Where the generated code goes
+
+The tool generates separately for each "side," so they don't interfere:
+
+| Generated for | Which script | Code namespace |
+|---------------|--------------|----------------|
+| **Client** (Unity) | `gen-client-*` | `Hotfix.Config` |
+| **Server** (.NET) | `gen-server-*` | `GameFrameX.Config` |
+| **Both sides** | Run the matching script once for each | Each side gets its own |
+
+> Easy way to remember: the client uses the `client` script, the server uses the `server` script — run whichever side you need.
+
+## Tables in this repo
+
+These demo tables ship with the repo right now:
+
+| Table | File | Content |
+|-------|------|---------|
 | Achievement | `Excels/Tables/C-AchievementConfig-成就表.xlsx` | Achievement definitions |
 | Item | `Excels/Tables/D-ItemConfig-道具表-道具-1001.xlsx` | Item definitions |
 | Sound | `Excels/Tables/S-SoundsConfig-声音表.xlsx` | Sound definitions |
-| Localization — Achievement | `Excels/Local/L-Localization-成就.xlsx` | Achievement text translations |
-| Localization — Text | `Excels/Local/L-Localization-文本.xlsx` | General text translations |
-| Localization — UI | `Excels/Local/L-Localization-UI.xlsx` | UI text translations |
+| Localization - Achievement | `Excels/Local/L-Localization-成就.xlsx` | Achievement localized text |
+| Localization - Text | `Excels/Local/L-Localization-文本.xlsx` | General localized text |
+| Localization - UI | `Excels/Local/L-Localization-UI.xlsx` | UI localized text |
 
-Add new tables by registering them in `Excels/__tables__.xlsx` and defining their beans in `Excels/__beans__.xlsx`.
+Want to add a new table? Just follow the steps in "Beginner walkthrough."
 
-## Export Targets
+## Requirements
 
-Three targets are configured in `luban.conf`:
-
-| Target | Group | Top Module | Code Target | Use |
-|--------|-------|------------|-------------|-----|
-| `server` | `s` | `GameFrameX.Config` | `cs-dotnet-json` / `cs-bin` | Server-side (.NET) |
-| `client` | `c` | `Hotfix.Config` | `cs-simple-json` / `cs-bin` | Client-side (Unity) |
-| `all` | `c`, `s` | `cfg` | `luban` (default) | Both ends together |
-
-## System Requirements
-
-- **.NET SDK** — to run `Luban.dll`.
-- **Excel** (or a compatible editor) — to author the `.xlsx` source files.
-- **OS** — Windows, macOS, or Linux.
+- **.NET SDK** — runs the tool (download it from [dot.net](https://dotnet.microsoft.com/))
+- **Excel** (or WPS, Numbers, or any app that can edit `.xlsx`) — for filling in tables
+- **OS** — Windows, Mac, and Linux all work
 
 ## License
 
-This project is licensed under the [Apache License 2.0](LICENSE.md).
+This project is open-sourced under the [Apache License 2.0](LICENSE.md) — free to use, including for commercial purposes.
 
-## Related Links
+## Related links
 
 - [Documentation](https://gameframex.doc.alianblank.com)
-- [GitHub Repository](https://github.com/GameFrameX/GameFrameX.Config)
-- [Issue Tracker](https://github.com/GameFrameX/GameFrameX.Config/issues)
-- [Luban (GameFrameX fork)](https://github.com/GameFrameX/luban)
-- [Luban (upstream)](https://github.com/focus-creative-games/luban)
+- [GitHub repository](https://github.com/GameFrameX/GameFrameX.Config)
+- [Issue feedback](https://github.com/GameFrameX/GameFrameX.Config/issues)
+- [Luban (GameFrameX custom version)](https://github.com/GameFrameX/luban)
+- [Luban (original upstream)](https://github.com/focus-creative-games/luban)
