@@ -59,6 +59,77 @@ Config/
 └── gen-server-bin.sh/.bat    # 生成服务端 Bin 输出
 ```
 
+### Excel 源文件布局
+
+| 路径 | 用途 |
+|------|------|
+| `Excels/__tables__.xlsx` | 数据表注册表。在 `gameframex` 导入器下，表由文件名自动发现，因此该文件可为空。 |
+| `Excels/__beans__.xlsx` | 各表字段共用的 bean（结构体）定义（如 `Property`、`PropItem`）。 |
+| `Excels/__enums__.xlsx` | 枚举定义，可按分类拆分到多个 sheet。 |
+| `Excels/Tables/` | 游戏配置数据表——每个导出的 `Tb*` 类对应一张逻辑表。 |
+| `Excels/Local/` | 由 `gameframex` L10N provider 消费的本地化文本表。 |
+
+`Excels/` 下的子目录名参与命名空间推导：导入器按 `_`/`-` 切分目录名，取首段作为表命名空间，这也是 `Tables/` 和 `Local/` 保持独立目录的原因。
+
+## 文件命名规范
+
+在 `gameframex` 表导入器下，每个 Excel 数据文件都按文件名自动发现。文件名按 `-` 或 `_` 切分，需遵循：
+
+```
+{排序编号}-{导出表名}-{中文标识}.xlsx
+{排序编号}-{导出表名}-{分组}-{中文标识}.xlsx      ← 指定导出分组时
+```
+
+| 段位 | 含义 | 规则 |
+|------|------|------|
+| `{排序编号}` | 便于策划在文件浏览器中快速定位的单字母/数字，无导出语义。 | 字母或数字，不含中文，如 `C`、`D`、`S`、`L`。 |
+| `{导出表名}` | 生成的表类名为 `Tb{导出表名}`。 | PascalCase，**禁止中文**。如 `AchievementConfig` → `TbAchievementConfig`。 |
+| `{分组}`（可选） | 限制文件只在某端导出。 | 必须是已配置的分组：`c`（客户端）或 `s`（服务端）。若该段为中文或其他值，则忽略分组过滤，双端都导出。 |
+| `{中文标识}` | 人类可读的说明，仅作文档用途。 | 中文文本，可含多个 `-` 分段。 |
+
+> 导入器会拒绝 `{导出表名}` 含中文的文件：*"不支持中文表名 ... 表名称定义规范为: 排序编号-导出表名-中文标识名称"*。
+
+### 同名合并
+
+`{导出表名}` 相同的多个文件会合并为同一张逻辑表（多个输入文件），这是将大表拆分到多个文件的方式：
+
+| 文件 | 合并后的表 |
+|------|------------|
+| `L-Localization-成就.xlsx` / `L-Localization-文本.xlsx` / `L-Localization-UI.xlsx` | `TbLocalization` |
+| `D-ItemConfig-道具表-道具-1001.xlsx`（可继续 `1002`、`1003`…） | `TbItemConfig` |
+
+### 示例
+
+| 文件名 | 表类名 | 分组 | 说明 |
+|--------|--------|------|------|
+| `C-AchievementConfig-成就表.xlsx` | `TbAchievementConfig` | 双端 | 成就表 |
+| `D-ItemConfig-道具表-道具-1001.xlsx` | `TbItemConfig` | 双端 | 道具表（分片）|
+| `S-SoundsConfig-声音表.xlsx` | `TbSoundsConfig` | 双端 | 声音表 |
+| `C-AchievementConfig-c-成就表.xlsx`（示例） | `TbAchievementConfig` | 仅客户端 | 将只在客户端导出 |
+
+## 表头规范
+
+每张数据表 sheet 用固定的表头块定义字段。`gameframex` 导入器直接从这些行读取结构（`read_schema_from_file = true`）：
+
+| 行 | 标记 | 用途 |
+|----|------|------|
+| 1 | `##var` | 字段名 |
+| 2 | `##type` | 字段类型：`int`、`string`、`text`、`bool`、枚举/bean 名、`list,...` 等 |
+| 3 | `##group` | 字段级分组过滤（`c`/`s`），留空表示对所有目标导出 |
+| 4 | `##` | 中文注释/说明，供策划阅读 |
+
+- `text` 字段保存的是一个**本地化 key**，在客户端导出时对照 `Local/` 表解析。
+- 枚举/bean 类型必须在 `__enums__.xlsx` / `__beans__.xlsx` 中定义。
+
+示例（成就表节选）：
+
+```
+##var    | id | image | name | achievement_content | LockText | achievement_unlock_condition
+##type   | int| int   | text | text                | text     | (list#sep=|),int
+##group  |    |       |      |                     |          |
+##       | ID | 图标id | 成就Key | 成就内容Key          | 未解锁文字key | 成就解锁条件
+```
+
 ## 快速开始
 
 ### 前置要求

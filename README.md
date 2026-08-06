@@ -59,6 +59,77 @@ Config/
 └── gen-server-bin.sh/.bat    # Generate server Bin output
 ```
 
+### Excel source layout
+
+| Path | Purpose |
+|------|---------|
+| `Excels/__tables__.xlsx` | Table registry. Under the `gameframex` importer, tables are auto-discovered from filenames, so this file may stay empty. |
+| `Excels/__beans__.xlsx` | Shared bean (struct) definitions referenced by table fields (e.g. `Property`, `PropItem`). |
+| `Excels/__enums__.xlsx` | Enum definitions; can be split across multiple sheets for grouping. |
+| `Excels/Tables/` | Game config data tables — one logical table per exported `Tb*` class. |
+| `Excels/Local/` | Localization text tables consumed by the `gameframex` L10N provider. |
+
+Sub-directory names under `Excels/` take part in namespace derivation: the importer splits the directory name on `_`/`-` and uses the first segment as the table namespace, which is why `Tables/` and `Local/` are kept as separate folders.
+
+## File Naming Convention
+
+Under the `gameframex` table importer, every Excel data file is auto-discovered by its filename. The filename is split on `-` or `_` and must follow:
+
+```
+{sort}-{TableName}-{Chinese label}.xlsx
+{sort}-{TableName}-{group}-{Chinese label}.xlsx      ← restrict to a target group
+```
+
+| Segment | Meaning | Rules |
+|---------|---------|-------|
+| `{sort}` | A single letter/digit for designers to quickly locate the file in a file browser. No export semantics. | Alphanumeric, no Chinese. e.g. `C`, `D`, `S`, `L`. |
+| `{TableName}` | The exported table class is generated as `Tb{TableName}`. | PascalCase, **no Chinese allowed**. e.g. `AchievementConfig` → `TbAchievementConfig`. |
+| `{group}` (optional) | Restricts the file to a target group. | Must be a configured group: `c` (client) or `s` (server). If the segment is Chinese or anything else, group filtering is skipped and the file is exported to both ends. |
+| `{Chinese label}` | Human-readable description, documentation only. | Chinese text; may contain multiple `-` segments. |
+
+> The importer rejects Chinese in `{TableName}`: *"不支持中文表名 ... 表名称定义规范为: 排序编号-导出表名-中文标识名称"*.
+
+### Same-name merging
+
+Files sharing the same `{TableName}` merge into one logical table (multiple input files). This is how a large table is split across several files:
+
+| Files | Merged table |
+|-------|--------------|
+| `L-Localization-成就.xlsx` / `L-Localization-文本.xlsx` / `L-Localization-UI.xlsx` | `TbLocalization` |
+| `D-ItemConfig-道具表-道具-1001.xlsx` (+ `1002`, `1003` …) | `TbItemConfig` |
+
+### Examples
+
+| Filename | Table class | Group | Notes |
+|----------|-------------|-------|-------|
+| `C-AchievementConfig-成就表.xlsx` | `TbAchievementConfig` | both | Achievement table |
+| `D-ItemConfig-道具表-道具-1001.xlsx` | `TbItemConfig` | both | Item table, sharded |
+| `S-SoundsConfig-声音表.xlsx` | `TbSoundsConfig` | both | Sound table |
+| `C-AchievementConfig-c-成就表.xlsx` (example) | `TbAchievementConfig` | client only | would export to client only |
+
+## Table Header Schema
+
+Each data sheet defines its fields with a fixed header block. The `gameframex` importer reads the schema straight from these rows (`read_schema_from_file = true`):
+
+| Row | Marker | Purpose |
+|-----|--------|---------|
+| 1 | `##var` | Field names |
+| 2 | `##type` | Field types: `int`, `string`, `text`, `bool`, an enum/bean name, `list,...`, etc. |
+| 3 | `##group` | Per-field group filter (`c`/`s`); blank = exported to all targets |
+| 4 | `##` | Chinese comment / description for designers |
+
+- `text` fields hold a **localization key** resolved against the `Local/` tables at client export time.
+- Enum/bean types must be defined in `__enums__.xlsx` / `__beans__.xlsx`.
+
+Example (excerpt from the achievement table):
+
+```
+##var    | id | image | name | achievement_content | LockText | achievement_unlock_condition
+##type   | int| int   | text | text                | text     | (list#sep=|),int
+##group  |    |       |      |                     |          |
+##       | ID | 图标id | 成就Key | 成就内容Key          | 未解锁文字key | 成就解锁条件
+```
+
 ## Quick Start
 
 ### Prerequisites

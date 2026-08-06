@@ -59,6 +59,77 @@ Config/
 └── gen-server-bin.sh/.bat    # 生成伺服器 Bin 輸出
 ```
 
+### Excel 來源佈局
+
+| 路徑 | 用途 |
+|------|------|
+| `Excels/__tables__.xlsx` | 資料表登錄檔。在 `gameframex` 匯入器下，表由檔名自動發現，因此該檔案可為空。 |
+| `Excels/__beans__.xlsx` | 各表欄位共用的 bean（結構體）定義（如 `Property`、`PropItem`）。 |
+| `Excels/__enums__.xlsx` | 列舉定義，可按分類拆分到多個 sheet。 |
+| `Excels/Tables/` | 遊戲配置資料表——每個匯出的 `Tb*` 類對應一張邏輯表。 |
+| `Excels/Local/` | 由 `gameframex` L10N provider 消費的在地化文字表。 |
+
+`Excels/` 下的子目錄名參與命名空間推导：匯入器按 `_`/`-` 切分目錄名，取首段作為表命名空間，這也是 `Tables/` 和 `Local/` 保持獨立目錄的原因。
+
+## 檔案命名規範
+
+在 `gameframex` 表匯入器下，每個 Excel 資料檔案都依檔名自動發現。檔名按 `-` 或 `_` 切分，需遵循：
+
+```
+{排序編號}-{匯出表名}-{中文標識}.xlsx
+{排序編號}-{匯出表名}-{分組}-{中文標識}.xlsx      ← 指定匯出分組時
+```
+
+| 段位 | 含義 | 規則 |
+|------|------|------|
+| `{排序編號}` | 便於策劃在檔案瀏覽器中快速定位的單字母/數字，無匯出語義。 | 字母或數字，不含中文，如 `C`、`D`、`S`、`L`。 |
+| `{匯出表名}` | 產生的表類名為 `Tb{匯出表名}`。 | PascalCase，**禁止中文**。如 `AchievementConfig` → `TbAchievementConfig`。 |
+| `{分組}`（可選） | 限制檔案只在某端匯出。 | 必須是已配置的分組：`c`（客戶端）或 `s`（伺服器）。若該段為中文或其他值，則忽略分組過濾，雙端都匯出。 |
+| `{中文標識}` | 人類可讀的說明，僅作文檔用途。 | 中文文字，可含多個 `-` 分段。 |
+
+> 匯入器會拒絕 `{匯出表名}` 含中文的檔案：*"不支持中文表名 ... 表名称定义规范为: 排序编号-导出表名-中文标识名称"*。
+
+### 同名合併
+
+`{匯出表名}` 相同的多個檔案會合併為同一張邏輯表（多個輸入檔案），這是將大表拆分到多個檔案的方式：
+
+| 檔案 | 合併後的表 |
+|------|------------|
+| `L-Localization-成就.xlsx` / `L-Localization-文本.xlsx` / `L-Localization-UI.xlsx` | `TbLocalization` |
+| `D-ItemConfig-道具表-道具-1001.xlsx`（可繼續 `1002`、`1003`…） | `TbItemConfig` |
+
+### 範例
+
+| 檔名 | 表類名 | 分組 | 說明 |
+|------|--------|------|------|
+| `C-AchievementConfig-成就表.xlsx` | `TbAchievementConfig` | 雙端 | 成就表 |
+| `D-ItemConfig-道具表-道具-1001.xlsx` | `TbItemConfig` | 雙端 | 道具表（分片）|
+| `S-SoundsConfig-声音表.xlsx` | `TbSoundsConfig` | 雙端 | 聲音表 |
+| `C-AchievementConfig-c-成就表.xlsx`（範例） | `TbAchievementConfig` | 僅客戶端 | 將只在客戶端匯出 |
+
+## 表頭規範
+
+每張資料表 sheet 用固定的表頭區塊定義欄位。`gameframex` 匯入器直接從這些行讀取結構（`read_schema_from_file = true`）：
+
+| 行 | 標記 | 用途 |
+|----|------|------|
+| 1 | `##var` | 欄位名 |
+| 2 | `##type` | 欄位型別：`int`、`string`、`text`、`bool`、列舉/bean 名、`list,...` 等 |
+| 3 | `##group` | 欄位級分組過濾（`c`/`s`），留空表示對所有目標匯出 |
+| 4 | `##` | 中文註解/說明，供策劃閱讀 |
+
+- `text` 欄位保存的是一個**在地化 key**，在客戶端匯出時對照 `Local/` 表解析。
+- 列舉/bean 型別必須在 `__enums__.xlsx` / `__beans__.xlsx` 中定義。
+
+範例（成就表節選）：
+
+```
+##var    | id | image | name | achievement_content | LockText | achievement_unlock_condition
+##type   | int| int   | text | text                | text     | (list#sep=|),int
+##group  |    |       |      |                     |          |
+##       | ID | 图标id | 成就Key | 成就内容Key          | 未解锁文字key | 成就解锁条件
+```
+
 ## 快速開始
 
 ### 前置需求
