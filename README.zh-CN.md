@@ -59,6 +59,14 @@ Config/
 └── gen-server-bin.sh/.bat    # 生成服务端 Bin 输出
 ```
 
+### 目录说明
+
+| 目录 | 作用 |
+|------|------|
+| `Defines/` | 跨端类型定义。`builtin.xml` 定义 `vec2`/`vec3`/`vec4` 等 bean，按目标端映射——客户端为 `UnityEngine.Vector*`，服务端为 `System.Numerics.Vector*`。 |
+| `Excels/` | Excel 源数据根目录，被 `gameframex` 导入器递归扫描（见下方「Excel 源文件布局」）。 |
+| `Tools/` | Luban 运行时：`Luban.dll` 及其依赖程序集和 `Templates/` 代码模板。gen 脚本通过 `dotnet Tools/Luban.dll` 调用。 |
+
 ### Excel 源文件布局
 
 | 路径 | 用途 |
@@ -89,14 +97,16 @@ Config/
 
 > 导入器会拒绝 `{导出表名}` 含中文的文件：*"不支持中文表名 ... 表名称定义规范为: 排序编号-导出表名-中文标识名称"*。
 
-### 同名合并
+### 分表
 
-`{导出表名}` 相同的多个文件会合并为同一张逻辑表（多个输入文件），这是将大表拆分到多个文件的方式：
+一张逻辑表的数据可以分散到多个 Excel 文件——当表数据量很大，或想按模块组织行数据时很有用。导入器会把 `{导出表名}` 相同的所有文件合并为同一张表，导出时它们的行会被拼接在一起。
 
-| 文件 | 合并后的表 |
-|------|------------|
-| `L-Localization-成就.xlsx` / `L-Localization-文本.xlsx` / `L-Localization-UI.xlsx` | `TbLocalization` |
-| `D-ItemConfig-道具表-道具-1001.xlsx`（可继续 `1002`、`1003`…） | `TbItemConfig` |
+命名：各分片保持 `{排序编号}` 和 `{导出表名}` 一致，只通过 `{中文标识}` 加以区分。中文标识（含其中的编号或分类）仅作文档用途，导入器不会解析它。
+
+| 分表文件 | 合并后的表 | 典型用途 |
+|----------|------------|----------|
+| `L-Localization-成就.xlsx`、`L-Localization-文本.xlsx`、`L-Localization-UI.xlsx` | `TbLocalization` | 按模块组织本地化文本 |
+| `D-ItemConfig-道具表-道具-1001.xlsx`、`D-ItemConfig-道具表-道具-1002.xlsx`、… | `TbItemConfig` | 将大表拆分为易于管理的多个文件 |
 
 ### 示例
 

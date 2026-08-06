@@ -59,6 +59,14 @@ Config/
 └── gen-server-bin.sh/.bat    # Generate server Bin output
 ```
 
+### Folders
+
+| Folder | Role |
+|--------|------|
+| `Defines/` | Cross-platform type definitions. `builtin.xml` defines beans like `vec2`/`vec3`/`vec4`, mapped per target — `UnityEngine.Vector*` on the client, `System.Numerics.Vector*` on the server. |
+| `Excels/` | Excel source root, recursively scanned by the `gameframex` importer (see *Excel source layout* below). |
+| `Tools/` | Luban runtime: `Luban.dll` plus its dependency assemblies and the `Templates/` code templates. The gen scripts invoke it via `dotnet Tools/Luban.dll`. |
+
 ### Excel source layout
 
 | Path | Purpose |
@@ -89,14 +97,16 @@ Under the `gameframex` table importer, every Excel data file is auto-discovered 
 
 > The importer rejects Chinese in `{TableName}`: *"不支持中文表名 ... 表名称定义规范为: 排序编号-导出表名-中文标识名称"*.
 
-### Same-name merging
+### Table sharding
 
-Files sharing the same `{TableName}` merge into one logical table (multiple input files). This is how a large table is split across several files:
+A single logical table can be spread across multiple Excel files — handy when a table grows large or when you want to group rows by module. The importer merges every file whose `{TableName}` segment is identical into one table; their rows are concatenated at export time.
 
-| Files | Merged table |
-|-------|--------------|
-| `L-Localization-成就.xlsx` / `L-Localization-文本.xlsx` / `L-Localization-UI.xlsx` | `TbLocalization` |
-| `D-ItemConfig-道具表-道具-1001.xlsx` (+ `1002`, `1003` …) | `TbItemConfig` |
+Naming: keep `{sort}` and `{TableName}` identical across the shards, and vary only the `{Chinese label}` to tell them apart. The label (including any numbers or categories) is documentation-only — the importer does not parse it.
+
+| Sharded files | Merged table | Typical use |
+|----------------|--------------|-------------|
+| `L-Localization-成就.xlsx`, `L-Localization-文本.xlsx`, `L-Localization-UI.xlsx` | `TbLocalization` | group localization text by module |
+| `D-ItemConfig-道具表-道具-1001.xlsx`, `D-ItemConfig-道具表-道具-1002.xlsx`, … | `TbItemConfig` | split a large table into manageable files |
 
 ### Examples
 

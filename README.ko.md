@@ -59,6 +59,14 @@ Config/
 └── gen-server-bin.sh/.bat    # 서버 Bin 출력 생성
 ```
 
+### 디렉터리
+
+| 디렉터리 | 역할 |
+|----------|------|
+| `Defines/` | 크로스 플랫폼 타입 정의. `builtin.xml`이 `vec2`/`vec3`/`vec4` 등 bean을 정의하며, 타깃별로 매핑됩니다 — 클라이언트는 `UnityEngine.Vector*`, 서버는 `System.Numerics.Vector*`. |
+| `Excels/` | Excel 소스 루트. `gameframex` 임포터가 재귀적으로 스캔합니다(아래 「Excel 소스 레이아웃」 참조). |
+| `Tools/` | Luban 런타임: `Luban.dll`과 의존 어셈블리, `Templates/` 코드 템플릿. gen 스크립트는 `dotnet Tools/Luban.dll`로 호출합니다. |
+
 ### Excel 소스 레이아웃
 
 | 경로 | 용도 |
@@ -89,14 +97,16 @@ Config/
 
 > 임포터는 `{내보내기 테이블명}`에 중국어가 포함된 파일을 거부합니다: *"不支持中文表名 ... 表名称定义规范为: 排序编号-导出表名-中文标识名称"*.
 
-### 동명 병합
+### 테이블 분할
 
-동일한 `{내보내기 테이블명}`을 가진 파일들은 하나의 논리 테이블(여러 입력 파일)로 병합됩니다. 큰 테이블을 여러 파일로 나누는 방법입니다:
+하나의 논리 테이블 데이터를 여러 Excel 파일로 분산할 수 있습니다 — 테이블이 커지거나 행을 모듈별로 묶고 싶을 때 유용합니다. 임포터는 `{내보내기 테이블명}`이 동일한 모든 파일을 하나의 테이블로 병합하며, 내보내기 시 행이 함께 이어집니다.
 
-| 파일 | 병합된 테이블 |
-|------|----------------|
-| `L-Localization-成就.xlsx` / `L-Localization-文本.xlsx` / `L-Localization-UI.xlsx` | `TbLocalization` |
-| `D-ItemConfig-道具表-道具-1001.xlsx`(`1002`, `1003`… 계속 가능) | `TbItemConfig` |
+명명: 각 샤드는 `{정렬 번호}`와 `{내보내기 테이블명}`을 동일하게 유지하고, `{중국어 라벨}`로만 구분합니다. 라벨(번호나 분류 포함)은 문서 전용이며 임포터가 파싱하지 않습니다.
+
+| 분할 파일 | 병합된 테이블 | 일반적 용도 |
+|-----------|----------------|------------|
+| `L-Localization-成就.xlsx`, `L-Localization-文本.xlsx`, `L-Localization-UI.xlsx` | `TbLocalization` | 모듈별로 로컬라이제이션 텍스트 정리 |
+| `D-ItemConfig-道具表-道具-1001.xlsx`, `D-ItemConfig-道具表-道具-1002.xlsx`, … | `TbItemConfig` | 큰 테이블을 관리하기 쉬운 파일들로 분할 |
 
 ### 예시
 
