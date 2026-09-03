@@ -2,6 +2,7 @@ name: Sync Luban Tools
 
 # 轮询 luban 仓库,main 分支有新提交时重新构建 Luban 并同步产物到 Tools/。
 # 零凭证设计:匿名读公开的 luban 仓库,用本仓库默认 GITHUB_TOKEN 提交。
+# 上次同步的 SHA 记在 sync commit message 的 Luban-Sha trailer 里,不落额外文件。
 # 每天定时检查;无变化时整个 workflow 只做一次 git ls-remote,秒级完成。
 # 需要立即同步时可手动 workflow_dispatch 触发(可勾选强制重建)。
 
@@ -32,6 +33,9 @@ jobs:
     steps:
       - name: Checkout Config
         uses: actions/checkout@v4
+        with:
+          # 完整历史:检查步骤要从最近一次 sync commit 的 trailer 读上次同步的 SHA
+          fetch-depth: 0
 
       - name: Resolve latest luban commit
         id: luban
@@ -49,10 +53,7 @@ jobs:
         env:
           FORCE: ${{ inputs.force }}
         run: |
-          last=""
-          if [ -f Tools/.luban-build ]; then
-            last=$(cat Tools/.luban-build)
-          fi
+          last=$(git log -1 --format='%(trailers:key=Luban-Sha,valueonly)' --grep='^chore(tools): sync luban build')
           echo "last synced: ${last:-<none>}"
           if [ "$FORCE" = "true" ] || [ "$last" != "${{ steps.luban.outputs.sha }}" ]; then
             echo "needed=true" >> "$GITHUB_OUTPUT"
@@ -81,9 +82,7 @@ jobs:
 
       - name: Sync Tools
         if: steps.check.outputs.needed == 'true'
-        run: |
-          rsync -a --delete publish/ Tools/
-          echo "${{ steps.luban.outputs.sha }}" > Tools/.luban-build
+        run: rsync -a --delete publish/ Tools/
 
       - name: Commit and push
         if: steps.check.outputs.needed == 'true'
@@ -98,5 +97,5 @@ jobs:
             exit 0
           fi
           short=${LUBAN_SHA:0:7}
-          git commit -m "chore(tools): sync luban build ${short}"
+          git commit -m "chore(tools): sync luban build ${short}" -m "Luban-Sha: ${LUBAN_SHA}"
           git push
